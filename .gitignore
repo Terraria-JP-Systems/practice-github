@@ -1,0 +1,10 @@
+# Environment files (commit only .env.example)
+.env
+.env.*
+!.env.example
+
+# Local editor / OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
