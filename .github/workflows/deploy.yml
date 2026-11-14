@@ -1,10 +1,10 @@
-name: Deploy main and dev to GitHub Pages
+name: Deploy main and develop to GitHub Pages
 
 on:
   push:
     branches:
       - main
-      - dev
+      - develop
   workflow_dispatch:
     inputs:
       message:
@@ -35,11 +35,11 @@ jobs:
           ref: main
           path: main-source
 
-      - name: Checkout dev
+      - name: Checkout develop
         uses: actions/checkout@v4
         with:
-          ref: dev
-          path: dev-source
+          ref: develop
+          path: develop-source
 
       - name: Assemble both environments
         env:
@@ -49,7 +49,7 @@ jobs:
           DEPLOY_MESSAGE: ${{ inputs.message }}
         run: |
           set -euo pipefail
-          mkdir -p public/dev
+          mkdir -p public/develop
 
           rsync -a --delete \
             --exclude='.git/' --exclude='.github/' --exclude='README.md' \
@@ -58,18 +58,18 @@ jobs:
           rsync -a --delete \
             --exclude='.git/' --exclude='.github/' --exclude='README.md' \
             --exclude='.gitignore' --exclude='.env' --exclude='.env.*' \
-            dev-source/ public/dev/
+            develop-source/ public/develop/
 
           MAIN_SHA="$(git -C main-source rev-parse HEAD)"
-          DEV_SHA="$(git -C dev-source rev-parse HEAD)"
-          export MAIN_SHA DEV_SHA
+          develop_SHA="$(git -C develop-source rev-parse HEAD)"
+          export MAIN_SHA develop_SHA
 
           # Create build-time .env files for each published branch.
           # These files stay on the runner and are never copied to the public site.
           printf 'APP_ENV=main\n' > "$RUNNER_TEMP/main.env"
-          printf 'APP_ENV=dev\n' > "$RUNNER_TEMP/dev.env"
+          printf 'APP_ENV=develop\n' > "$RUNNER_TEMP/develop.env"
           export MAIN_ENV_FILE="$RUNNER_TEMP/main.env"
-          export DEV_ENV_FILE="$RUNNER_TEMP/dev.env"
+          export develop_ENV_FILE="$RUNNER_TEMP/develop.env"
 
           python3 - <<'PY'
           import json, os
@@ -95,7 +95,7 @@ jobs:
 
           for branch, sha, directory, env_file in (
               ("main", os.environ["MAIN_SHA"], "public", os.environ["MAIN_ENV_FILE"]),
-              ("dev", os.environ["DEV_SHA"], "public/dev", os.environ["DEV_ENV_FILE"]),
+              ("develop", os.environ["develop_SHA"], "public/develop", os.environ["develop_ENV_FILE"]),
           ):
               env = read_env(env_file)
               config = {"branch": branch, "environment": env.get("APP_ENV", branch)}
